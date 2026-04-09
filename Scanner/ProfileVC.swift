@@ -3,11 +3,31 @@ import UIKit
 class ProfileVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     let settingTV = UITableView(frame: .zero, style: .insetGrouped)
+    private var currentRole: WalletRole = .recipient
+    let connect = Connect.connection
     
-    enum ProfileSection: Int, CaseIterable {
-        case userInfo
+    
+    enum ProfileRow {
+        case role
+        case address
         case accounts
         case logout
+    }
+    
+    private var tableData: [[ProfileRow]] {
+        var sections: [[ProfileRow]] = []
+        
+        if currentRole == .recipient {
+            sections.append([.address])
+        }
+        else {
+            sections.append([.role, .address])
+        }
+        
+        sections.append([.accounts])
+        sections.append([.logout])
+        
+        return sections
     }
     
     override func viewDidLoad() {
@@ -17,8 +37,34 @@ class ProfileVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
         title = "Profile"
     
         configureTV()
+        
+        Task {
+            await loadCurrentRole()
+        }
+
+        NotificationCenter.default.addObserver(self, selector: #selector(onAccountSwitch(_:)), name: .accountDidSwitch, object: nil)
     }
     
+    
+    private func loadCurrentRole() async {
+        let account = connect.metamaskSDK.account
+        guard !account.isEmpty
+        else {
+            return
+        }
+        let role = await connect.resolveRole(for: account)
+        await MainActor.run {
+            currentRole = role
+            settingTV.reloadData()
+        }
+    }
+
+    @objc private func onAccountSwitch(_ notification: Notification) {
+        if let role = notification.userInfo?["role"] as? WalletRole {
+            currentRole = role
+        }
+        settingTV.reloadData()
+    }
 
     
     func configureTV(){
@@ -28,7 +74,6 @@ class ProfileVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
         settingTV.dataSource = self
         settingTV.delegate = self
         
-        settingTV.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         settingTV.sectionHeaderHeight = 8
         settingTV.sectionFooterHeight = 8
         settingTV.layer.cornerRadius = 10
@@ -43,112 +88,113 @@ class ProfileVC: UIViewController, UITableViewDelegate, UITableViewDataSource {
         
     }
     
-    
-
-    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-            switch ProfileSection(rawValue: section) {
-            case .userInfo:  return 1
-            case .accounts:  return 1
-            case .logout:    return 1
-            case .none:      return 0
-            }
+        return tableData[section].count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        return ProfileSection.allCases.count  
+        return tableData.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        var config = cell.defaultContentConfiguration()
-        cell.accessoryType = .none
-
-        
-        switch ProfileSection(rawValue: indexPath.section) {
-            
-        case .userInfo:
-            config.text = "Address"
-            config.secondaryText = Connect.connection.metamaskSDK.account
-            
-        case .accounts:
-            config.text = "Switch account"
-            config.image = UIImage(systemName: "person.2.fill")
-            config.imageProperties.tintColor = .systemBlue
-            cell.accessoryType = .disclosureIndicator
-            
-        case .logout:
-            config.text = "Log out"
-            config.image = UIImage(systemName: "rectangle.portrait.and.arrow.right")
-            config.textProperties.color = .systemRed
-            config.imageProperties.tintColor = .systemRed
-            
-        case .none:
-            break
+        var cell = tableView.dequeueReusableCell(withIdentifier: "cell")
+        if cell == nil {
+            cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
         }
         
-        cell.contentConfiguration = config
+        guard let cell = cell else { return UITableViewCell() }
+        
+        cell.accessoryType = .none
+        cell.textLabel?.textColor = .label
+        cell.detailTextLabel?.font = .systemFont(ofSize: 14)
+        cell.detailTextLabel?.textColor = .secondaryLabel
+        cell.imageView?.tintColor = nil
+        cell.imageView?.image = nil
+        cell.detailTextLabel?.text = nil
+
+        let rowType = tableData[indexPath.section][indexPath.row]
+
+        switch rowType {
+        case .role:
+            cell.textLabel?.text = "Role"
+            cell.detailTextLabel?.text = currentRole.rawValue
+
+        case .address:
+            cell.textLabel?.text = "Address"
+            let account = connect.metamaskSDK.account
+            cell.detailTextLabel?.text = account.isEmpty ? "Not connected" : "\(account.prefix(6))...\(account.suffix(4))"
+            cell.detailTextLabel?.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+
+        case .accounts:
+            cell.textLabel?.text = "Switch account"
+            cell.imageView?.image = UIImage(systemName: "person.2.fill")
+            cell.imageView?.tintColor = .blue
+            cell.accessoryType = .disclosureIndicator
+
+        case .logout:
+            cell.textLabel?.text = "Log out"
+            cell.imageView?.image = UIImage(systemName: "rectangle.portrait.and.arrow.right")
+            cell.textLabel?.textColor = .systemRed
+            cell.imageView?.tintColor = .systemRed
+        }
+        
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return nil
     }
 
 
-        func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-            switch ProfileSection(rawValue: section) {
-            case .userInfo:  return nil
-            case .accounts:  return nil
-            case .logout:    return nil
-            case .none:      return nil
-            }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+
+        let rowType = tableData[indexPath.section][indexPath.row]
+        
+        switch rowType {
+        case .accounts:
+            showSwitchAccount()
+            
+        case .logout:
+            showLogoutAlert()
+            
+        default:
+            break
         }
+    }
 
 
-        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            tableView.deselectRow(at: indexPath, animated: true)
+    func showLogoutAlert() {
+        let alert = UIAlertController(title: "Log out?", message: "You will have to login again.", preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "Log out", style: .destructive) { [weak self] _ in
+            self?.performLogout()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
 
-            switch ProfileSection(rawValue: indexPath.section) {
-            case .accounts:
-                showSwitchAccount()
-            case .logout:
-                showLogoutAlert()
-            default:
-                break
-            }
+    func performLogout() {
+        let loginVC = UINavigationController(rootViewController: MetaMaskVC())
+        guard let window = view.window
+        else {
+            return
         }
-
-
-        func showLogoutAlert() {
-            let alert = UIAlertController(
-                title: "Log out?",
-                message: "You will have to login again to access your data.",
-                preferredStyle: .actionSheet
-            )
-            alert.addAction(UIAlertAction(title: "Log out", style: .destructive) { [weak self] _ in
-                self?.performLogout()
-            })
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-            present(alert, animated: true)
+        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve) {
+            window.rootViewController = loginVC
         }
+    }
 
-        func performLogout() {
-            UserDefaults.standard.removeObject(forKey: "currentUser")
 
-            let loginVC = UINavigationController(rootViewController: MetaMaskVC())
-            guard let window = view.window else { return }
-            UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve) {
-                window.rootViewController = loginVC
-            }
+    func showSwitchAccount() {
+        let vc = SwitchAccountVC()
+        if let sheet = vc.sheetPresentationController {
+            sheet.detents = [.custom { _ in return 250}]
+            sheet.prefersGrabberVisible = true
+            sheet.preferredCornerRadius = 20
         }
-
-
-        func showSwitchAccount() {
-            let vc = SwitchAccountVC()
-            if let sheet = vc.sheetPresentationController {
-                sheet.detents = [.medium()]
-                sheet.prefersGrabberVisible = true
-                sheet.preferredCornerRadius = 20
-            }
-            present(vc, animated: true)
-        }
+        present(vc, animated: true)
+    }
 }
     
 
