@@ -7,9 +7,8 @@ import BigInt
 
 enum Config {
     static let apiKey: String = {
-        guard let key = Bundle.main.object(forInfoDictionaryKey: "infuraAPIKey") as? String else {
-            fatalError("infuraAPIKey not found in Info.plist")
-        }
+        let key = Bundle.main.object(forInfoDictionaryKey: "infuraAPIKey") as? String ?? ""
+        print("infuraAPIKey = '\(key)'")
         return key
     }()
 }
@@ -20,12 +19,18 @@ class Connect {
     
     let metamaskSDK: MetaMaskSDK
     
-    
-
     lazy var web3 = Web3(rpcURL: "https://sepolia.infura.io/v3/\(Config.apiKey)")
     
     let contractAddressStr: String
     let contractAddress: EthereumAddress
+    var account: EthereumAddress? {
+        guard !metamaskSDK.account.isEmpty,
+              let addr = try? EthereumAddress(hex: metamaskSDK.account, eip55: true)
+        else {
+            return nil
+        }
+        return addr
+    }
 
 
     let tag = EthereumQuantityTag(tagType: .latest)
@@ -38,11 +43,7 @@ class Connect {
             transport: .deeplinking(dappScheme: "QR"),
             sdkOptions: SDKOptions(
                 infuraAPIKey: Config.apiKey,
-                readonlyRPCMap: [
-                    "0xaa36a7": "https://sepolia.infura.io/v3/\(Config.apiKey)"
-                ]
-            )
-        )
+                readonlyRPCMap: ["0xaa36a7": "https://sepolia.infura.io/v3/\(Config.apiKey)"]))
     }
     
     let jsonString = """
@@ -57,9 +58,18 @@ class Connect {
     func callFun(input: String, contract: DynamicContract) -> ((ABIEncodable...) -> SolidityInvocation)? {
         return contract[input]
     }
+    
+    func switchToSepolia() async throws {
+        let request = EthereumRequest(method: .switchEthereumChain, params: [["chainId": "0xaa36a7"]])
+        let result = await metamaskSDK.request(request)
+//        try result.get()
+    }
 
     
     func sendingTransaction(call: any SolidityInvocation) async throws -> String{
+        
+        try await switchToSepolia()
+        
         guard let rawData = call.encodeABI()?.hex() else {
             throw InvocationError.encodingError
         }
@@ -71,6 +81,83 @@ class Connect {
         let sdkResult = await metamaskSDK.request(request)
         let txHash    = try sdkResult.get()
         return txHash
+    }
+    
+    
+    func checkManufacturer(_ address: EthereumAddress) -> Bool {
+        guard let invocation = callFun(input: "checkManufacturer", contract: contract)?(address) else {
+            return false
+        }
+        
+        do {
+            let result = try invocation.call().wait()
+            return (result[""] as? Bool) ?? (result["0"] as? Bool) ?? false
+        } catch {
+            print("Error (checkManufacturer): \(error)")
+            return false
+        }
+    }
+
+    func checkLogisticsProvider(_ address: EthereumAddress) -> Bool {
+        guard let invocation = callFun(input: "checkLogisticsProvider", contract: contract)?(address) else {
+            return false
+        }
+        
+        do {
+            let result = try invocation.call().wait()
+            return (result[""] as? Bool) ?? (result["0"] as? Bool) ?? false
+        } catch {
+            print("Error (checkLogistics): \(error)")
+            return false
+        }
+    }
+    
+    
+    func resolveRole(for address: String) async -> WalletRole {
+        guard let addr = try? EthereumAddress(hex: address, eip55: true)
+        else {
+            return .recipient
+        }
+        if checkManufacturer(addr) {
+            return .manufacturer
+        }
+        if checkLogisticsProvider(addr) {
+            return .logistics
+        }
+        return .recipient
+    }
+    
+    func addProductInfo(employee: EthereumAddress, name: String, serialNumber: String, origin: String, destination: String, mass: BigUInt, recipient: EthereumAddress) async throws -> String {
+            let call = callFun(input: "addProductInfo", contract: contract)!(employee, name, serialNumber, origin, destination, mass, recipient)
+            return try await sendingTransaction(call: call)
+        }
+
+    func deleteProductInfo(employee: EthereumAddress, productId: BigUInt) async throws -> String {
+        let call = callFun(input: "deleteProductInfo", contract: contract)!(employee, productId)
+        return try await sendingTransaction(call: call)
+    }
+    
+    func addProductCertificate(employee: EthereumAddress, productId: BigUInt, certificateURL: String) async throws -> String {
+            let call = callFun(input: "addProductCertificate", contract: contract)!(employee, productId, certificateURL)
+            return try await sendingTransaction(call: call)
+    }
+
+    func deleteProductCertificate(employee: EthereumAddress, productId: BigUInt, index: BigUInt) async throws -> String {
+        let call = callFun(input: "deleteProductCertificate", contract: contract)!(employee, productId, index)
+        return try await sendingTransaction(call: call)
+    }
+    
+    func getProductsByManufacturerPaginated(manufacturerAddress: EthereumAddress, offset: BigUInt, limit: BigUInt) -> ([[String: Any]], total: BigUInt) {
+        do {
+            let result = try callFun(input: "getProductsByManufacturerPaginated", contract: contract)!(manufacturerAddress, offset, limit).call().wait()
+            let products = (result["result"] as? [[String: Any]]) ?? []
+            let total = (result["total"]  as? BigUInt) ?? 0
+                return (products, total)
+        }
+        catch {
+            print("Error (getProductsByManufacturerPaginated): \(error)")
+            return ([], 0)
+        }
     }
     
 
