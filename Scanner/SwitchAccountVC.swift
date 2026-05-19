@@ -2,11 +2,13 @@ import UIKit
 import metamask_ios_sdk
 import Web3
 
-
 enum WalletRole: String {
-    case manufacturer = "Manufacturer"
-    case logistics = "Logistics provider"
-    case recipient = "Recipient"
+    case manufacturer_emp = "Manufacturer (employee)"
+    case manufacturer_cert_emp = "Manufacturer (certification manager)"
+    case manufacturer_admin = "Manufacturer (administrator)"
+    case logistics_admin = "Logistics provider (administrator)"
+    case logistics_emp = "Logistics provider (employee)"
+    case recipient
 }
 
 extension Notification.Name {
@@ -17,7 +19,7 @@ import UIKit
 import metamask_ios_sdk
 
 class SwitchAccountVC: UIViewController {
-    
+
     let connect = Connect.connection
     private var currentRole: WalletRole = .recipient
 
@@ -33,7 +35,6 @@ class SwitchAccountVC: UIViewController {
 
         NotificationCenter.default.addObserver(self, selector: #selector(handleSDKAccountChange), name: NSNotification.Name("MetaMaskSDKAccountChanged"), object: nil)
     }
-
 
     @objc private func handleSDKAccountChange() {
         let newAccount = connect.metamaskSDK.account
@@ -57,8 +58,7 @@ class SwitchAccountVC: UIViewController {
             }
         }
     }
-    
-    
+
     private func switchAccount() async {
             await MainActor.run {
                 switchButton.isEnabled = false
@@ -66,14 +66,14 @@ class SwitchAccountVC: UIViewController {
             }
             let sdk = connect.metamaskSDK
             sdk.clearSession()
-    
+
             let result = await sdk.connect()
-    
+
             await MainActor.run {
                 spinner.stopAnimating()
                 switchButton.isEnabled = true
             }
-    
+
             switch result {
             case .success:
                 let newAddress = connect.metamaskSDK.account
@@ -81,23 +81,22 @@ class SwitchAccountVC: UIViewController {
                 else {
                     return
                 }
-    
+
                 let role = await connect.resolveRole(for: newAddress)
-    
+
                 await MainActor.run {
                     self.currentRole = role
                     NotificationCenter.default.post(name: .accountDidSwitch, object: nil, userInfo: ["role": role])
                     dismiss(animated: true)
                 }
 
-    
             case .failure(let err):
                 await MainActor.run {
                     self.showError(err.localizedDescription)
                 }
             }
         }
-    
+
     @objc private func switchTapped() {
         Task {
             await switchAccount()

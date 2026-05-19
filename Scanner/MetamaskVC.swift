@@ -2,9 +2,9 @@ import UIKit
 import metamask_ios_sdk
 
 class MetaMaskVC: UIViewController {
-    
+
     let connect = Connect.connection
-      
+
     private let titleLabel = UILabel()
     private let iconView = UIImageView()
     private let subtitleLabel = UILabel()
@@ -12,14 +12,12 @@ class MetaMaskVC: UIViewController {
     private let spinner = UIActivityIndicatorView(style: .medium)
     private let buttonBack = UIButton(type: .system)
 
-
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setupUI()
         updateUI()
     }
-
 
     private var isInstalled: Bool {
         UIApplication.shared.canOpenURL(URL(string: "metamask://")!)
@@ -58,7 +56,6 @@ class MetaMaskVC: UIViewController {
         }
     }
 
-
     @objc private func actionTapped() {
         if !isInstalled {
             UIApplication.shared.open(URL(string: "https://apps.apple.com/app/metamask/id1438144202")!)
@@ -66,7 +63,6 @@ class MetaMaskVC: UIViewController {
         else if isConnected {
             let sdk = connect.metamaskSDK
             sdk.disconnect()
-            sdk.account.removeAll()
             sdk.clearSession()
             updateUI()
         }
@@ -76,9 +72,9 @@ class MetaMaskVC: UIViewController {
             }
         }
     }
-    
+
     @objc private func goingBack() {
-        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.showHome()
+        (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.resolveAndShowHome()
     }
 
     private func connect() async {
@@ -93,7 +89,7 @@ class MetaMaskVC: UIViewController {
 
             switch result {
             case .success:
-                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.showHome()
+                (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.resolveAndShowHome()
             case .failure(let error):
                 showError(error.localizedDescription)
             }
@@ -101,14 +97,12 @@ class MetaMaskVC: UIViewController {
             updateUI()
         }
     }
-    
 
     private func showError(_ message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-
 
     private func setButton(title: String, color: UIColor) {
         actionButton.setTitle(title, for: .normal)
@@ -119,12 +113,11 @@ class MetaMaskVC: UIViewController {
         titleLabel.font = .systemFont(ofSize: 26, weight: .bold)
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        
+
         iconView.contentMode = .scaleAspectFit
         iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 30, weight: .regular)
         iconView.translatesAutoresizingMaskIntoConstraints = false
-        
-        
+
         let stack = UIStackView(arrangedSubviews: [iconView, titleLabel])
         stack.axis = .horizontal
         stack.spacing = 6
@@ -142,7 +135,7 @@ class MetaMaskVC: UIViewController {
         actionButton.setTitleColor(.white, for: .normal)
         actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
         actionButton.translatesAutoresizingMaskIntoConstraints = false
-        
+
         buttonBack.setTitle("Go back", for: .normal)
         buttonBack.tintColor = .white
         buttonBack.backgroundColor = .systemBlue
@@ -170,7 +163,7 @@ class MetaMaskVC: UIViewController {
             actionButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 32),
             actionButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32),
             actionButton.heightAnchor.constraint(equalToConstant: 52),
-            
+
             buttonBack.topAnchor.constraint(equalTo: actionButton.bottomAnchor, constant: 15),
             buttonBack.leadingAnchor.constraint(equalTo: actionButton.leadingAnchor),
             buttonBack.trailingAnchor.constraint(equalTo: actionButton.trailingAnchor),
@@ -181,5 +174,3 @@ class MetaMaskVC: UIViewController {
         ])
     }
 }
-
-

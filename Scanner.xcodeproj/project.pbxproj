@@ -11,6 +11,7 @@
 		C86F74D42F5ACABE00104EBD /* Web3 in Frameworks */ = {isa = PBXBuildFile; productRef = C86F74D32F5ACABE00104EBD /* Web3 */; };
 		C86F74D62F5ACABE00104EBD /* Web3ContractABI in Frameworks */ = {isa = PBXBuildFile; productRef = C86F74D52F5ACABE00104EBD /* Web3ContractABI */; };
 		C86F74D82F5ACABE00104EBD /* Web3PromiseKit in Frameworks */ = {isa = PBXBuildFile; productRef = C86F74D72F5ACABE00104EBD /* Web3PromiseKit */; };
+		C8C3E1572FB9DBBF00DAFD82 /* SkeletonView in Frameworks */ = {isa = PBXBuildFile; productRef = C8C3E1562FB9DBBF00DAFD82 /* SkeletonView */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,8 @@
 		C8B41A432EFDE6B000466E78 /* Exceptions for "Scanner" folder in "Scanner" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Config.xcconfig,
+				ConfigEx.xcconfig,
 				Info.plist,
 			);
 			target = C8B41A302EFDE6B000466E78 /* Scanner */;
@@ -47,6 +50,7 @@
 				C86F74D12F59D74C00104EBD /* metamask-ios-sdk in Frameworks */,
 				C86F74D82F5ACABE00104EBD /* Web3PromiseKit in Frameworks */,
 				C86F74D42F5ACABE00104EBD /* Web3 in Frameworks */,
+				C8C3E1572FB9DBBF00DAFD82 /* SkeletonView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +97,7 @@
 				C86F74D32F5ACABE00104EBD /* Web3 */,
 				C86F74D52F5ACABE00104EBD /* Web3ContractABI */,
 				C86F74D72F5ACABE00104EBD /* Web3PromiseKit */,
+				C8C3E1562FB9DBBF00DAFD82 /* SkeletonView */,
 			);
 			productName = Scanner;
 			productReference = C8B41A312EFDE6B000466E78 /* Scanner.app */;
@@ -106,7 +111,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1630;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					C8B41A302EFDE6B000466E78 = {
 						CreatedOnToolsVersion = 16.3;
@@ -125,6 +130,7 @@
 			packageReferences = (
 				C86F74CF2F59D74C00104EBD /* XCRemoteSwiftPackageReference "metamask-ios-sdk" */,
 				C86F74D22F5ACABE00104EBD /* XCRemoteSwiftPackageReference "Web3" */,
+				C8C3E1552FB9DBBF00DAFD82 /* XCRemoteSwiftPackageReference "SkeletonView" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C8B41A322EFDE6B000466E78 /* Products */;
@@ -167,11 +173,13 @@
 				DEVELOPMENT_TEAM = 3MXX846358;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scanner/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "For QR code scanning it is needed to grant access for camera";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to the camera to take photos for the experiment.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "privacy photo";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -195,11 +203,13 @@
 				DEVELOPMENT_TEAM = 3MXX846358;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scanner/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "For QR code scanning it is needed to grant access for camera";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to the camera to take photos for the experiment.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "privacy photo";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -274,6 +284,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -333,6 +344,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -378,6 +390,14 @@
 				minimumVersion = 0.8.8;
 			};
 		};
+		C8C3E1552FB9DBBF00DAFD82 /* XCRemoteSwiftPackageReference "SkeletonView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Juanpe/SkeletonView";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.31.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -400,6 +420,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C86F74D22F5ACABE00104EBD /* XCRemoteSwiftPackageReference "Web3" */;
 			productName = Web3PromiseKit;
+		};
+		C8C3E1562FB9DBBF00DAFD82 /* SkeletonView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C8C3E1552FB9DBBF00DAFD82 /* XCRemoteSwiftPackageReference "SkeletonView" */;
+			productName = SkeletonView;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
